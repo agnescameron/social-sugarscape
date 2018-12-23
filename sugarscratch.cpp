@@ -37,14 +37,16 @@ class Bug {
     World *world;
     int x, y, id;
     int nextX, nextY;
+    int appetite;
 
     Glance *look(int dx, int dy);
   public:
-    Bug(World *_world, int _id, int _x, int _y) {
+    Bug(World *_world, int _id, int _x, int _y, int _appetite) {
       world = _world;
       id = _id;
       x = _x;
       y = _y;
+      appetite = _appetite;
     };
     void update(json &bugStep);
     void think();
@@ -75,13 +77,14 @@ class World {
       for (int i = 0; i < bugCount; i++) {
         int x, y;
         int id=i;
+        int appetite = 0;
 
         do {
           x = random(0, width);
           y = random(0, height);
         } while (occupied(x, y));
 
-        bugs.push_back(new Bug(this, id, x, y));
+        bugs.push_back(new Bug(this, id, x, y, appetite));
       }
     }
 
@@ -92,6 +95,7 @@ class World {
     bool inBounds(int x, int y);
     int eat(int x, int y);
     void print();
+    void printAppetites();
 };
 
 
@@ -117,7 +121,7 @@ int getSentiment(int row) {
 
    int sentScore = 5;
 
-   rc = sqlite3_open("../ishaan/feels.sqlite", &db);
+   rc = sqlite3_open("ishaan/feels.sqlite", &db);
 
    if( rc ) {
       fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
@@ -247,6 +251,47 @@ void World::print() {
   }
 }
 
+void World::printAppetites() {
+int i,j;
+//
+
+  for (int y = 0; y < 4; y++) {
+    for (int x = 0; x < 4; x++) {
+      //calculate i,j values for square
+      // assign tiles to (i,j) elements in array
+      int appetite = bugs[x+y*4]->appetite;
+      string tile1;
+      string tile2;
+      int limit;
+
+      if(appetite <= -50){
+        limit = -100;
+        tile1 = " ";
+        tile2 = "░";
+      }
+      if(appetite > -50 && appetite <= 0){
+        limit = -50;
+        tile1 = "░";
+        tile2 = "▒";       
+      }
+      if(appetite > 0 && appetite <= 50){
+        limit = 0;
+        tile1 = "▒";
+        tile2 = "▓";       
+      }
+      if(appetite > 50){
+        limit = 50;
+        tile1 = "▓";
+        tile2 = "█";         
+      }
+    cout << tile2 << tile2;
+    }
+    cout << endl;
+  }
+  //print array
+
+}
+
 Glance *Bug::look(int dx, int dy) {
   int targetX = x + dx;
   int targetY = y + dy;
@@ -298,20 +343,23 @@ void Bug::update(json &bugStep) {
     {"hexID", id},
     {"moveX", nextX-x},
     {"moveY", nextY-y},
+    {"appetite", appetite},
   };
   bugStep.push_back(bug);
 
   x = nextX;
   y = nextY;
 
-  world->eat(x, y);
+  int sugar = world->eat(x, y);
+  appetite = appetite + sugar - 3;
+  cout << "appetite is " << appetite << "" << endl;
 }
 
 
 int main(int argc, char **argv) {
   // Seed PRNG
   srand(time(NULL));
-  World world(50, 50, 11);
+  World world(50, 50, 16);
   vector<json> bugSteps;
   //initialise output file for JSON
   ofstream jsonFile;
@@ -324,7 +372,8 @@ int main(int argc, char **argv) {
 
   bugSteps.push_back(bugs);
     printf("\e[2J");
-    world.print();
+    // world.print();
+    world.printAppetites();
     usleep(90 * 1000);
     //increment the timer
     world.clk++;
