@@ -251,44 +251,87 @@ void World::print() {
   }
 }
 
-void World::printAppetites() {
-int i,j;
-//
+void getTiles(int appetite, string &tile1, string &tile2){
+  if(appetite <= -100){
+    tile1 = " ";
+    tile2 = " ";
+  }
+  if(appetite > -100 && appetite <= -50){
+    tile1 = " ";
+    tile2 = "░";
+  }
+  if(appetite > -50 && appetite <= 0){
+    tile1 = "░";
+    tile2 = "▒";       
+  }
+  if(appetite > 0 && appetite <= 50){
+    tile1 = "▒";
+    tile2 = "▓";       
+  }
+  if(appetite > 50 && appetite <= 100){
+    tile1 = "▓";
+    tile2 = "█";         
+  }
+  if(appetite > 100){
+    tile1 = "█";
+    tile2 = "█";         
+  }
 
-  for (int y = 0; y < 4; y++) {
-    for (int x = 0; x < 4; x++) {
+}
+
+void getPattern(int appetite, string &pattern){
+  if(abs(appetite%50) < 12){
+    pattern = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+  }
+  else if(abs(appetite%50) < 25){
+    pattern = "00000000000000000000000000000000000001111110000000000111111000000000011111100000000001111110000000000000000000000000000000000000";
+  }
+  else if(abs(appetite%50) < 37){
+    pattern = "00000000000000000000011111100000000011000011000000001101101100000000110110110000000011000011000000000111111000000000000000000000";
+  }
+  else{
+    pattern = "00001111111100000010100000010100010100011000101010100011110001011010001111000101010100011000101000101000000101000000111111110000";
+  }
+}
+
+//this is specific to the 16-bug system
+void World::printAppetites() {
+string stateArr[16*4][8*4];
+string tempArr[16][8];
+
+for(int y=0; y<4; y++){
+  for(int x=0; x<4; x++){
       //calculate i,j values for square
       // assign tiles to (i,j) elements in array
       int appetite = bugs[x+y*4]->appetite;
       string tile1;
       string tile2;
-      int limit;
+      string pattern;
 
-      if(appetite <= -50){
-        limit = -100;
-        tile1 = " ";
-        tile2 = "░";
+      getTiles(appetite, tile1, tile2);
+      getPattern(appetite, pattern);
+
+      for(int j=0; j<8; j++){
+        for(int i=0; i<16; i++){
+          if(pattern[i + j*16] == '0'){
+            tempArr[i][j] = tile1;
+            stateArr[(x*16)+i][(y*8)+j] = tile1;
+          }
+          else{
+            tempArr[i][j] = tile2;
+            stateArr[(x*16)+i][(y*8)+j] = tile2;
+          }
+        }
       }
-      if(appetite > -50 && appetite <= 0){
-        limit = -50;
-        tile1 = "░";
-        tile2 = "▒";       
-      }
-      if(appetite > 0 && appetite <= 50){
-        limit = 0;
-        tile1 = "▒";
-        tile2 = "▓";       
-      }
-      if(appetite > 50){
-        limit = 50;
-        tile1 = "▓";
-        tile2 = "█";         
-      }
-    cout << tile2 << tile2;
+    }
+  }
+  //print array here:
+  for(int y=0; y<8*4; y++){
+      for(int x=0; x<16*4; x++){
+        cout << stateArr[x][y];
     }
     cout << endl;
   }
-  //print array
 
 }
 
