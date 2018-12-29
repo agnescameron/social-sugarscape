@@ -38,15 +38,17 @@ class Bug {
     int x, y, id;
     int nextX, nextY;
     int appetite;
+    float metabolism;
 
     Glance *look(int dx, int dy);
   public:
-    Bug(World *_world, int _id, int _x, int _y, int _appetite) {
+    Bug(World *_world, int _id, int _x, int _y, int _appetite, float _metabolism) {
       world = _world;
       id = _id;
       x = _x;
       y = _y;
       appetite = _appetite;
+      metabolism = _metabolism;
     };
     void update(json &bugStep);
     void think();
@@ -78,13 +80,14 @@ class World {
         int x, y;
         int id=i;
         int appetite = 0;
+        float metabolism = 0.5;
 
         do {
           x = random(0, width);
           y = random(0, height);
         } while (occupied(x, y));
 
-        bugs.push_back(new Bug(this, id, x, y, appetite));
+        bugs.push_back(new Bug(this, id, x, y, appetite, metabolism));
       }
     }
 
@@ -280,17 +283,20 @@ void getTiles(int appetite, string &tile1, string &tile2){
 }
 
 void getPattern(int appetite, string &pattern){
-  if(abs(appetite%50) < 12){
+  if(appetite < 2){
     pattern = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
   }
-  else if(abs(appetite%50) < 25){
+  else if(appetite < 4){
     pattern = "00000000000000000000000000000000000001111110000000000111111000000000011111100000000001111110000000000000000000000000000000000000";
   }
-  else if(abs(appetite%50) < 37){
+  else if(appetite < 6){
     pattern = "00000000000000000000011111100000000011000011000000001101101100000000110110110000000011000011000000000111111000000000000000000000";
   }
-  else{
+  else if(appetite < 8){
     pattern = "00001111111100000010100000010100010100011000101010100011110001011010001111000101010100011000101000101000000101000000111111110000";
+  }
+  else{
+    pattern = "11111111111111111110110000110111110010011001001111010110011010111101011001101011110010011001001111101100001101111111111111111111";
   }
 }
 
@@ -394,7 +400,7 @@ void Bug::update(json &bugStep) {
   y = nextY;
 
   int sugar = world->eat(x, y);
-  appetite = appetite + sugar - 3;
+  appetite = appetite + sugar - round(float(appetite)*metabolism);
   cout << "appetite is " << appetite << "" << endl;
 }
 
