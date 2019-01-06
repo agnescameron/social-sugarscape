@@ -58,21 +58,23 @@ class World {
   private:
     const int MIN_SUGAR = 1;
     const int MAX_SUGAR = 6;
+    const int MIN_SPICE = 1;
+    const int MAX_SPICE = 6;    
     const int width, height;
-    vector<int> cells;
+    vector <vector<int> > cells;
     vector<Bug*> bugs;
   public:
     int clk = 0;    
     World(int _width, int _height, int bugCount)
       : width(_width), height(_height) {
-        //set the clock
-
+      //set the clock
       // We need enough cells for all the bugs (max 1 bug per cell)
       assert(bugCount < (width * height));
-      // Put some sugar in the cells
-      cells = vector<int>(width * height, 0);
-      for (int i = 0; i < cells.size(); i++) {
-        cells[i] = random(MIN_SUGAR, MAX_SUGAR);
+      // set up cells as 2d vector with room for spice
+      cells = vector<vector<int>> (2, vector<int>(width * height, 0));
+      for (int i = 0; i < cells[0].size(); i++) {
+        cells[0][i] = random(MIN_SUGAR, MAX_SUGAR);
+        cells[1][i] = random(MIN_SPICE, MAX_SPICE);
       }
 
       // Add the bugs in random locations
@@ -158,8 +160,8 @@ int World::eat(int x, int y) {
 
   int i = y * width + x;
 
-  int sugar = cells[i];
-  cells[i] = 0;
+  int sugar = cells[0][i];
+  cells[0][i] = 0;
 
   return sugar;
 }
@@ -189,17 +191,15 @@ void World::regrowSugar(){
   int regrowth;
   if(currentSent>0){
   regrowth = ceil((float)9*currentSent);
-
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
       int i = y * height + x;
-
-      if (cells[i] == 0) {
+      if (cells[0][i] == 0) {
           int sugar = (rand() % regrowth);
           if(sugar > 9){
-            cells[i] = 9;
+            cells[0][i] = 9;
           }
-          else cells[i] = sugar;
+          else cells[0][i] = sugar;
       }
     }
   }
@@ -212,7 +212,7 @@ int World::getSugar(int x, int y) {
     return false;
   }
 
-  return cells[y * width + x];
+  return cells[0][y * width + x];
 }
 
 void World::update(json &bugStep) {
@@ -242,8 +242,8 @@ void World::print() {
       if (occupied(x, y)) {
         printf("| ");
       } else {
-        if (cells[i] <= 9) {
-          printf("|%d", cells[i]);
+        if (cells[0][i] <= 9) {
+          printf("|%d", cells[0][i]);
         } else {
           printf("^");
         }
@@ -401,7 +401,6 @@ void Bug::update(json &bugStep) {
 
   int sugar = world->eat(x, y);
   appetite = appetite + sugar - round(float(appetite)*metabolism);
-  cout << "appetite is " << appetite << "" << endl;
 }
 
 
@@ -418,15 +417,14 @@ int main(int argc, char **argv) {
 
   json bugs;
   world.update(bugs);
-
   bugSteps.push_back(bugs);
-    printf("\e[2J");
-    // world.print();
-    world.printAppetites();
-    usleep(90 * 1000);
-    //increment the timer
-    world.clk++;
-    cout << world.clk << endl;
+  printf("\e[2J");
+  // world.print();
+  world.printAppetites();
+  usleep(90 * 1000);
+  //increment the timer
+  world.clk++;
+  cout << world.clk << endl;
   }
 
   jsonFile << bugSteps << endl;
