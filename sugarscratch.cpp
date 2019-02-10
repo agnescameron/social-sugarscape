@@ -139,8 +139,6 @@ int getSentiment(int row) {
    if( rc ) {
       fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
       return(0);
-   } else {
-      fprintf(stderr, "Opened database successfully\n");
    }
 
 /* Create SQL statement */
@@ -152,8 +150,6 @@ int getSentiment(int row) {
    if( rc != SQLITE_OK ) {
       fprintf(stderr, "SQL error: %s\n", zErrMsg);
       sqlite3_free(zErrMsg);
-   } else {
-      fprintf(stdout, "Operation done successfully\n");
    }
 
    sqlite3_close(db);
@@ -430,9 +426,11 @@ void Bug::think() {
   random_shuffle(sight.begin(), sight.end());
 
   // Filter out the occupied cells
-  remove_if(sight.begin(), sight.end(), [](const Glance *a) {
+  auto remove = remove_if(sight.begin(), sight.end(), [](const Glance *a) {
     return a->occupied;
   }); 
+
+  sight.erase(remove, sight.end());
 
   if (sight.size() == 0) {
     // There's nowhere to move
@@ -455,19 +453,28 @@ void Bug::trade() {
   Glance *down = look(0, 1);
   Glance *left = look(-1, 0);
   Glance *right = look(1, 0);
+  Glance *twoUp = look(0, -2);
+  Glance *twoDown = look(0, 2);
+  Glance *twoLeft = look(-2, 0);
+  Glance *twoRight = look(2, 0);
 
-  vector<Glance*> sight = { up, down, left, right};
+  vector<Glance*> sight = { up, down, left, right, twoUp, twoDown, twoLeft, twoRight };
   random_shuffle(sight.begin(), sight.end());
 
   // Filter out the non-occupied cells
-  remove_if(sight.begin(), sight.end(), [](const Glance *a) {
+  auto remove = remove_if(sight.begin(), sight.end(), [](const Glance *a) {
     return !(a->occupied);
   }); 
 
+  sight.erase(remove, sight.end());
+
   if (sight.size() == 0) {
-    // There's nowhere to move
+    // There's nobody to trade with
     return;
   }
+
+  // cout << "rem is " << rem << endl;
+  cout << "i got " << sight.size() << "  bugs to trade with" << endl;
 
   // Sort the cells we looked at by decreasing sugar value
   sort(sight.begin(), sight.end(), [](const Glance *a, const Glance *b) {
@@ -500,25 +507,29 @@ void Bug::update(json &bugStep) {
 int main(int argc, char **argv) {
   // Seed PRNG
   srand(time(NULL));
-  World world(50, 50, 16);
+  World world(50, 50, 10);
   vector<json> bugSteps;
   //initialise output file for JSON
   ofstream jsonFile;
   jsonFile.open("bugs.json");
 
   while (world.clk<1000) {
-
+  time_t start = time(0);
   json bugs;
   world.update(bugs);
   bugSteps.push_back(bugs);
-  printf("\e[2J");
+  // printf("\e[2J");
   // world.printSugar();
-  world.printSpice();
+  // world.printSpice();
   //world.printAppetites();
   usleep(90 * 1000);
+
   //increment the timer
   world.clk++;
   cout << world.clk << endl;
+  time_t end = time(0);
+  double time = difftime(end, start) * 1000.0;
+  cout << "time is " << time << endl;
   }
 
   jsonFile << bugSteps << endl;
