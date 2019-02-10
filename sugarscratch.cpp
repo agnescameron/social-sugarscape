@@ -30,6 +30,7 @@ typedef struct Glance {
   int sugar;
   int spice;
   bool occupied;
+  float metabolicRatio;
 } Glance;
 
 class Bug {
@@ -100,6 +101,7 @@ class World {
 
     void update(json &bugStep);
     bool occupied(int x, int y);
+    float metabolicRatio(int x, int y);
     int getSugar(int x, int y);
     int getSpice(int x, int y);
     void regrowSugar();
@@ -206,6 +208,25 @@ bool World::occupied(int x, int y) {
   }
 
   return false;
+}
+
+float World::metabolicRatio(int x, int y) {
+  if (!inBounds(x, y)) {
+    // Only death outside
+    return 0.0;
+  }
+
+  //if a bug there, return
+  for (auto bug : bugs) {
+    if (bug->x == x && bug->y == y) {
+      cout << "sugar is" << bug->sugar << "spice is " << bug-> spice << endl;
+      float ratio = 1.0;
+      return ratio;
+    }
+  }
+
+  //nothing happens 
+  return 0.0;
 }
 
 void World::regrowSugar(){
@@ -409,6 +430,7 @@ Glance *Bug::look(int dx, int dy) {
     .sugar = world->getSugar(targetX, targetY),
     .spice = world->getSpice(targetX, targetY),    
     .occupied = world->occupied(targetX, targetY),
+    .metabolicRatio = world->metabolicRatio(targetX, targetY),
   };
 }
 
@@ -478,7 +500,7 @@ void Bug::trade() {
 
   // Sort the cells we looked at by decreasing sugar value
   sort(sight.begin(), sight.end(), [](const Glance *a, const Glance *b) {
-    return a->spice > b->spice;
+    return a->metabolicRatio > b->metabolicRatio;
   });
 
 }
