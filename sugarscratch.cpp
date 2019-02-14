@@ -55,6 +55,7 @@ class Bug {
       metabolism = _metabolism;
     };
     void update(json &bugStep);
+    float calculateRatio();
     void think();
     void trade();    
 };
@@ -219,13 +220,12 @@ float World::metabolicRatio(int x, int y) {
   //if a bug there, return
   for (auto bug : bugs) {
     if (bug->x == x && bug->y == y) {
-      cout << "sugar is" << bug->sugar << "spice is " << bug-> spice << endl;
-      float ratio = 1.0;
+      float ratio = bug->calculateRatio();
       return ratio;
     }
   }
 
-  //nothing happens 
+  //else nothing happens 
   return 0.0;
 }
 
@@ -281,11 +281,10 @@ void World::update(json &bugStep) {
     bug->think();
   }
 
-  // Let everyone figure out their next move without the world changing
+  // // Let everyone figure out their next move without the world changing
   for (auto bug : shuffledBugs) {
     bug->trade();
   }
-
   // Let everyone affect the world
   for (auto bug : shuffledBugs) {
     bug->update(bugStep);
@@ -434,6 +433,19 @@ Glance *Bug::look(int dx, int dy) {
   };
 }
 
+float Bug::calculateRatio(){
+  float ratio;
+
+  if (sugar == 0)
+    ratio = 0.0;
+
+  else
+    ratio = sqrt(spice*metabolism/sugar);
+  
+  return ratio;
+}
+
+
 void Bug::think() {
   Glance *up = look(0, -1);
   Glance *down = look(0, 1);
@@ -451,7 +463,6 @@ void Bug::think() {
   auto remove = remove_if(sight.begin(), sight.end(), [](const Glance *a) {
     return a->occupied;
   }); 
-
   sight.erase(remove, sight.end());
 
   if (sight.size() == 0) {
@@ -468,6 +479,13 @@ void Bug::think() {
   Glance *target = sight.front();
   nextX = target->x;
   nextY = target->y;
+
+  for ( int i = 0; i < sight.size(); i++ ) 
+  {       
+    delete sight[i];    
+  }    
+  sight.clear(); 
+
 }
 
 void Bug::trade() {
@@ -488,21 +506,39 @@ void Bug::trade() {
     return !(a->occupied);
   }); 
 
+  float myRatio = calculateRatio();
+
   sight.erase(remove, sight.end());
 
   if (sight.size() == 0) {
-    // There's nobody to trade with
+    // There's nowhere to move
     return;
   }
 
-  // cout << "rem is " << rem << endl;
-  cout << "i got " << sight.size() << "  bugs to trade with" << endl;
-
-  // Sort the cells we looked at by decreasing sugar value
+  // Sort the cells we looked at by decreasing metabolic ratio value
   sort(sight.begin(), sight.end(), [](const Glance *a, const Glance *b) {
     return a->metabolicRatio > b->metabolicRatio;
   });
 
+  //this is the guy we might want to trade with
+  float neighborRatio = sight[0]->metabolicRatio;
+
+  if(myRatio <= neighborRatio){
+    return;
+  }
+
+  float price = sqrt(myRatio*neighborRatio);
+
+  sugar = sugar + 1;
+  sight[0]->sugar = sight[0]->sugar - 1;
+  spice = spice - price;
+  sight[0]->spice = sight[0]->spice + price;
+
+  for ( int i = 0; i < sight.size(); i++ ) 
+  {       
+    delete sight[i];    
+  }    
+  sight.clear();   
 }
 
 
@@ -529,14 +565,13 @@ void Bug::update(json &bugStep) {
 int main(int argc, char **argv) {
   // Seed PRNG
   srand(time(NULL));
-  World world(50, 50, 10);
+  World world(500, 500, 10000);
   vector<json> bugSteps;
   //initialise output file for JSON
   ofstream jsonFile;
   jsonFile.open("bugs.json");
 
   while (world.clk<1000) {
-  time_t start = time(0);
   json bugs;
   world.update(bugs);
   bugSteps.push_back(bugs);
@@ -548,10 +583,7 @@ int main(int argc, char **argv) {
 
   //increment the timer
   world.clk++;
-  cout << world.clk << endl;
-  time_t end = time(0);
-  double time = difftime(end, start) * 1000.0;
-  cout << "time is " << time << endl;
+  // cout << world.clk << endl;
   }
 
   jsonFile << bugSteps << endl;
