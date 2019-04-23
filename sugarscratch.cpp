@@ -565,18 +565,18 @@ void Bug::update(json &bugStep) {
 int main(int argc, char **argv) {
   // Seed PRNG
   srand(time(NULL));
-  World world(500, 500, 10000);
+  World world(50, 50, 100);
   vector<json> bugSteps;
   //initialise output file for JSON
   ofstream jsonFile;
   jsonFile.open("bugs.json");
 
-  while (world.clk<1000) {
+  while (world.clk<100) {
   json bugs;
   world.update(bugs);
   bugSteps.push_back(bugs);
   // printf("\e[2J");
-  // world.printSugar();
+  world.printSugar();
   // world.printSpice();
   //world.printAppetites();
   usleep(90 * 1000);
