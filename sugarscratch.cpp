@@ -12,6 +12,7 @@
 #include <math.h>
 #include "json.hpp"
 #include <fstream>
+#include <valarray>
 
 // for convenience
 using json = nlohmann::json;
@@ -112,6 +113,7 @@ class World {
     void printSugar();
     void printSpice();    
     void printAppetites();
+    void calculateAppetites(int res, json &appetites);
 };
 
 
@@ -419,6 +421,32 @@ for(int y=0; y<4; y++){
 
 }
 
+
+//takes segments of the grid and calculates the 'appetites'
+//of the bugs in that space
+void World::calculateAppetites(int res, json &appetites) {
+  int segment = floor(width/res);
+  int segCells = segment*segment;
+  valarray <int> segVec(res*res);
+
+  //for each segment in the grid, get and average the resources
+  for(int i=0; i<res*res; i++){
+    int segSum = 0;
+    for(int j=0; j<segCells; j++){
+      segSum = segSum + cells[0][j+i*segCells];
+    }
+    segVec[i] = segSum;
+  }
+
+  //now, normalise for 0-255
+  int maxSeg = segVec.max();
+  segVec = segVec*(255/maxSeg);
+
+  appetites = segVec;
+}
+
+
+
 Glance *Bug::look(int dx, int dy) {
   int targetX = x + dx;
   int targetY = y + dy;
@@ -567,18 +595,26 @@ int main(int argc, char **argv) {
   srand(time(NULL));
   World world(50, 50, 100);
   vector<json> bugSteps;
+  //outputs 2x2 file
+  vector<json> bugAppetites;
+
   //initialise output file for JSON
-  ofstream jsonFile;
-  jsonFile.open("bugs.json");
+  ofstream bugStepsJson;
+  ofstream bugAppetitesJson;
+  ofstream bugAppetites6;
+  bugStepsJson.open("bugs.json");
+  bugAppetitesJson.open("bugApp.json");
 
   while (world.clk<100) {
-  json bugs;
+  json bugs, appetites;
   world.update(bugs);
   bugSteps.push_back(bugs);
   // printf("\e[2J");
   world.printSugar();
   // world.printSpice();
   //world.printAppetites();
+  world.calculateAppetites(6, appetites);
+  bugAppetites.push_back(appetites);
   usleep(90 * 1000);
 
   //increment the timer
@@ -586,6 +622,7 @@ int main(int argc, char **argv) {
   // cout << world.clk << endl;
   }
 
-  jsonFile << bugSteps << endl;
+  bugStepsJson << bugSteps << endl;
+  bugAppetitesJson << bugAppetites << endl;
 
 }
