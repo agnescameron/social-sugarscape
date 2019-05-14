@@ -116,8 +116,7 @@ class World {
     bool inBounds(int x, int y);
     int eat(int x, int y);
     bool gather(int x, int y);
-    void printSugar();
-    void printSpice();    
+    void print(int selection);
     void printAppetites();
     void calculateAppetites(int res, json &appetites);
 };
@@ -300,7 +299,7 @@ void World::update(json &bugStep) {
   }
 }
 
-void World::printSugar() {
+void World::print(int s) {
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
       int i = y * height + x;
@@ -308,8 +307,8 @@ void World::printSugar() {
       if (occupied(x, y)) {
         printf("| ");
       } else {
-        if (cells[0][i] <= 9) {
-          printf("|%d", cells[0][i]);
+        if (cells[s][i] <= 9) {
+          printf("|%d", cells[s][i]);
         } else {
           printf("^");
         }
@@ -319,27 +318,6 @@ void World::printSugar() {
     printf("|\n");
   }
 }
-
-void World::printSpice() {
-  for (int y = 0; y < height; y++) {
-    for (int x = 0; x < width; x++) {
-      int i = y * height + x;
-
-      if (occupied(x, y)) {
-        printf("| ");
-      } else {
-        if (cells[1][i] <= 9) {
-          printf("|%d", cells[1][i]);
-        } else {
-          printf("^");
-        }
-      }
-    }
-
-    printf("|\n");
-  }
-}
-
 
 //takes segments of the grid and calculates the 'appetites'
 //of the bugs in that space
@@ -502,8 +480,6 @@ void Bug::trade() {
     totalSpice = totalSpice + bug->spice;
   }
 
-  cout << "total spice is " << totalSpice << endl;
-
   for ( int i = 0; i < sight.size(); i++ ) 
   {       
     delete sight[i];    
@@ -555,8 +531,7 @@ int main(int argc, char **argv) {
   world.update(bugs);
   bugSteps.push_back(bugs);
   // printf("\e[2J");
-  //world.printSugar();
-  //world.printSpice();
+  world.print(0);
   world.calculateAppetites(2, appetites);
   bugAppetites.push_back(appetites);
   //usleep(90 * 1000);
