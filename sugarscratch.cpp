@@ -28,8 +28,8 @@ class World;
 
 typedef struct Glance {
   int x, y;
-  int sugar;
-  int spice;
+  float sugar;
+  float spice;
   bool occupied;
   float metabolicRatio;
 } Glance;
@@ -40,19 +40,21 @@ class Bug {
     World *world;
     int x, y, id;
     int nextX, nextY;
-    int sugar;
-    int spice;
+    float sugar;
+    float spice;
+    bool traded;
     float metabolism;
 
     Glance *look(int dx, int dy);
   public:
-    Bug(World *_world, int _id, int _x, int _y, int _sugar, int _spice, float _metabolism) {
+    Bug(World *_world, int _id, int _x, int _y, float _sugar, float _spice, bool _traded, float _metabolism) {
       world = _world;
       id = _id;
       x = _x;
       y = _y;
       sugar = _sugar;
       spice = _spice;
+      traded = _traded;
       metabolism = _metabolism;
     };
     void update(json &bugStep);
@@ -63,15 +65,16 @@ class Bug {
 
 class World {
   private:
-    const int MIN_SUGAR = 1;
-    const int MAX_SUGAR = 6;
-    const int MIN_SPICE = 0;
-    const int MAX_SPICE = 3;    
+    const float MIN_SUGAR = 1.0;
+    const float MAX_SUGAR = 6.0;
+    const float MIN_SPICE = 0.0;
+    const float MAX_SPICE = 3.0;    
     const int width, height;
     vector <vector<int> > cells;
-    vector<Bug*> bugs;
   public:
-    int clk = 0;    
+    vector<Bug*> bugs;
+    int clk = 0;
+    float totalSpiceBefore = 0;
     World(int _width, int _height, int bugCount)
       : width(_width), height(_height) {
       //set the clock
@@ -82,14 +85,17 @@ class World {
       for (int i = 0; i < cells[0].size(); i++) {
         cells[0][i] = random(MIN_SUGAR, MAX_SUGAR);
         cells[1][i] = random(MIN_SPICE, MAX_SPICE);
+        totalSpiceBefore = totalSpiceBefore + cells[1][i];
       }
+      cout << "total spice 111before is " << totalSpiceBefore << endl;
 
       // Add the bugs in random locations
       for (int i = 0; i < bugCount; i++) {
         int x, y;
         int id=i;
-        int sugar = 0;
-        int spice = 0;
+        float sugar = 0;
+        float spice = 0;
+        bool traded = false;
         float metabolism = 0.5;
 
         do {
@@ -97,15 +103,15 @@ class World {
           y = random(0, height);
         } while (occupied(x, y));
 
-        bugs.push_back(new Bug(this, id, x, y, sugar, spice, metabolism));
+        bugs.push_back(new Bug(this, id, x, y, sugar, spice, traded, metabolism));
       }
     }
 
     void update(json &bugStep);
     bool occupied(int x, int y);
     float metabolicRatio(int x, int y);
-    int getSugar(int x, int y);
-    int getSpice(int x, int y);
+    float getSugar(int x, int y);
+    float getSpice(int x, int y);
     void regrowSugar();
     bool inBounds(int x, int y);
     int eat(int x, int y);
@@ -118,15 +124,15 @@ class World {
 
 
 int callback(void *data, int argc, char **argv, char **azColName){
-   int i;
-   fprintf(stderr, "%s: ", (const char*)data);
+   //int i;
+   // fprintf(stderr, "%s: ", (const char*)data);
    
-   for(i = 0; i<argc; i++){
-      printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-   }
+   // for(i = 0; i<argc; i++){
+   //    printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+   // }
    
    currentSent = atof(argv[0]);
-   printf("\n");
+   //printf("\n");
    return 0;
 }
 
@@ -169,7 +175,7 @@ int World::eat(int x, int y) {
 
   int i = y * width + x;
 
-  int sugar = cells[0][i];
+  float sugar = cells[0][i];
   cells[0][i] = 0;
 
   return sugar;
@@ -182,7 +188,7 @@ bool World::gather(int x, int y) {
   }
 
   int i = y * width + x;
-  int spice = cells[1][i];
+  float spice = cells[1][i];
 
   if(spice != 0){
     cells[1][i] = spice-1;
@@ -213,6 +219,7 @@ bool World::occupied(int x, int y) {
   return false;
 }
 
+
 float World::metabolicRatio(int x, int y) {
   if (!inBounds(x, y)) {
     // Only death outside
@@ -241,9 +248,9 @@ void World::regrowSugar(){
     for (int x = 0; x < width; x++) {
       int i = y * height + x;
       if (cells[0][i] == 0) {
-          int sugar = (rand() % regrowth);
-          if(sugar > 9){
-            cells[0][i] = 9;
+          float sugar = (rand() % regrowth);
+          if(sugar > 9.0){
+            cells[0][i] = 9.0;
           }
           else cells[0][i] = sugar;
       }
@@ -252,7 +259,7 @@ void World::regrowSugar(){
 }
 }
 
-int World::getSugar(int x, int y) {
+float World::getSugar(int x, int y) {
   if (!inBounds(x, y)) {
     // Only wastes lie beyond
     return false;
@@ -261,7 +268,7 @@ int World::getSugar(int x, int y) {
   return cells[0][y * width + x];
 }
 
-int World::getSpice(int x, int y) {
+float World::getSpice(int x, int y) {
   if (!inBounds(x, y)) {
     // Only wastes lie beyond
     return false;
@@ -334,94 +341,6 @@ void World::printSpice() {
 }
 
 
-void getTiles(int sugar, string &tile1, string &tile2){
-  if(sugar <= -100){
-    tile1 = " ";
-    tile2 = " ";
-  }
-  if(sugar > -100 && sugar <= -50){
-    tile1 = " ";
-    tile2 = "░";
-  }
-  if(sugar > -50 && sugar <= 0){
-    tile1 = "░";
-    tile2 = "▒";       
-  }
-  if(sugar > 0 && sugar <= 50){
-    tile1 = "▒";
-    tile2 = "▓";       
-  }
-  if(sugar > 50 && sugar <= 100){
-    tile1 = "▓";
-    tile2 = "█";         
-  }
-  if(sugar > 100){
-    tile1 = "█";
-    tile2 = "█";         
-  }
-
-}
-
-void getPattern(int sugar, string &pattern){
-  if(sugar < 2){
-    pattern = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-  }
-  else if(sugar < 4){
-    pattern = "00000000000000000000000000000000000001111110000000000111111000000000011111100000000001111110000000000000000000000000000000000000";
-  }
-  else if(sugar < 6){
-    pattern = "00000000000000000000011111100000000011000011000000001101101100000000110110110000000011000011000000000111111000000000000000000000";
-  }
-  else if(sugar < 8){
-    pattern = "00001111111100000010100000010100010100011000101010100011110001011010001111000101010100011000101000101000000101000000111111110000";
-  }
-  else{
-    pattern = "11111111111111111110110000110111110010011001001111010110011010111101011001101011110010011001001111101100001101111111111111111111";
-  }
-}
-
-//this is specific to the 16-bug system
-void World::printAppetites() {
-string stateArr[16*4][8*4];
-string tempArr[16][8];
-
-for(int y=0; y<4; y++){
-  for(int x=0; x<4; x++){
-      //calculate i,j values for square
-      // assign tiles to (i,j) elements in array
-      int sugar = bugs[x+y*4]->sugar;
-      string tile1;
-      string tile2;
-      string pattern;
-
-      getTiles(sugar, tile1, tile2);
-      getPattern(sugar, pattern);
-
-      for(int j=0; j<8; j++){
-        for(int i=0; i<16; i++){
-          if(pattern[i + j*16] == '0'){
-            tempArr[i][j] = tile1;
-            stateArr[(x*16)+i][(y*8)+j] = tile1;
-          }
-          else{
-            tempArr[i][j] = tile2;
-            stateArr[(x*16)+i][(y*8)+j] = tile2;
-          }
-        }
-      }
-    }
-  }
-  //print array here:
-  for(int y=0; y<8*4; y++){
-      for(int x=0; x<16*4; x++){
-        cout << stateArr[x][y];
-    }
-    cout << endl;
-  }
-
-}
-
-
 //takes segments of the grid and calculates the 'appetites'
 //of the bugs in that space
 void World::calculateAppetites(int res, json &appetites) {
@@ -455,7 +374,7 @@ Glance *Bug::look(int dx, int dy) {
     .x = targetX,
     .y = targetY,
     .sugar = world->getSugar(targetX, targetY),
-    .spice = world->getSpice(targetX, targetY),    
+    .spice = world->getSpice(targetX, targetY),        
     .occupied = world->occupied(targetX, targetY),
     .metabolicRatio = world->metabolicRatio(targetX, targetY),
   };
@@ -539,7 +458,7 @@ void Bug::trade() {
   sight.erase(remove, sight.end());
 
   if (sight.size() == 0) {
-    // There's nowhere to move
+    // There's nobody to trade with
     return;
   }
 
@@ -557,10 +476,33 @@ void Bug::trade() {
 
   float price = sqrt(myRatio*neighborRatio);
 
-  sugar = sugar + 1;
-  sight[0]->sugar = sight[0]->sugar - 1;
-  spice = spice - price;
-  sight[0]->spice = sight[0]->spice + price;
+  if(isnan(price)) return; //none of that!
+
+  for (auto bug : world->bugs) { 
+    if (bug->x == sight[0]->x && bug->y == sight[0]->y) {
+      //no trading twice!
+      if(bug->traded == true){
+        return;
+      }
+      else {
+        sugar = sugar + 1;
+        spice = spice - price;
+        traded = true;
+        bug->sugar = bug->sugar - 1;
+        bug->spice = bug->spice + price;
+        bug->traded = true;      
+      }
+    }
+  }
+
+  float totalSugar = 0;
+  float totalSpice = 0;
+  for (auto bug : world->bugs) {
+    totalSugar = totalSugar + bug->sugar;
+    totalSpice = totalSpice + bug->spice;
+  }
+
+  cout << "total spice is " << totalSpice << endl;
 
   for ( int i = 0; i < sight.size(); i++ ) 
   {       
@@ -576,6 +518,7 @@ void Bug::update(json &bugStep) {
     {"moveX", nextX-x},
     {"moveY", nextY-y},
     {"sugar", sugar},
+    {"spice", spice},    
   };
   bugStep.push_back(bug);
 
@@ -586,7 +529,9 @@ void Bug::update(json &bugStep) {
   if (world->gather(x, y)){
     spice = spice + 1;
   }
-  sugar = sugar + foundSugar - round(float(sugar)*metabolism);
+  sugar = sugar + foundSugar - sugar*metabolism;
+  cout << "bug sugar is " << sugar << " spice is " << spice << endl;
+  traded = false;
 }
 
 
@@ -603,19 +548,18 @@ int main(int argc, char **argv) {
   ofstream bugAppetitesJson;
   ofstream bugAppetites6;
   bugStepsJson.open("bugs.json");
-  bugAppetitesJson.open("bugApp.json");
+  bugAppetitesJson.open("bugApp-2.json");
 
-  while (world.clk<100) {
+  while (world.clk<1000) {
   json bugs, appetites;
   world.update(bugs);
   bugSteps.push_back(bugs);
   // printf("\e[2J");
-  world.printSugar();
-  // world.printSpice();
-  //world.printAppetites();
-  world.calculateAppetites(6, appetites);
+  //world.printSugar();
+  //world.printSpice();
+  world.calculateAppetites(2, appetites);
   bugAppetites.push_back(appetites);
-  usleep(90 * 1000);
+  //usleep(90 * 1000);
 
   //increment the timer
   world.clk++;
