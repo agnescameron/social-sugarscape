@@ -1,4 +1,6 @@
 bin/
 ishaan/
+scrapers/
+.DS_Store
 *.json
 

@@ -87,7 +87,6 @@ class World {
         cells[1][i] = random(MIN_SPICE, MAX_SPICE);
         totalSpiceBefore = totalSpiceBefore + cells[1][i];
       }
-      cout << "total spice 111before is " << totalSpiceBefore << endl;
 
       // Add the bugs in random locations
       for (int i = 0; i < bugCount; i++) {
@@ -118,7 +117,7 @@ class World {
     bool gather(int x, int y);
     void print(int selection);
     void printAppetites();
-    void calculateAppetites(int res, json &appetites);
+    void calculateAppetites(int res_x, int res_y, json &appetites);
 };
 
 
@@ -321,13 +320,14 @@ void World::print(int s) {
 
 //takes segments of the grid and calculates the 'appetites'
 //of the bugs in that space
-void World::calculateAppetites(int res, json &appetites) {
-  int segment = floor(width/res);
-  int segCells = segment*segment;
-  valarray <int> segVec(res*res);
+void World::calculateAppetites(int res_x, int res_y, json &appetites) {
+  int seg_x = floor(width/res_x);
+  int seg_y = floor(height/res_y);
+  int segCells = seg_x*seg_y;
+  valarray <int> segVec(res_x*res_y);
 
   //for each segment in the grid, get and average the resources
-  for(int i=0; i<res*res; i++){
+  for(int i=0; i<res_x*res_y; i++){
     int segSum = 0;
     for(int j=0; j<segCells; j++){
       segSum = segSum + cells[0][j+i*segCells];
@@ -336,8 +336,13 @@ void World::calculateAppetites(int res, json &appetites) {
   }
 
   //now, normalise for 0-255
-  int maxSeg = segVec.max();
-  segVec = segVec*(255/maxSeg);
+  // int maxSeg = segVec.max();
+  // int minSeg = segVec.min(); 
+  segVec = segVec-segVec.min();
+  segVec = segVec*(255/segVec.max());
+  float avSeg = segVec.sum()/segVec.size();
+  int range = segVec.max() - segVec.min(); 
+  cout << range << "  " << avSeg << endl;
 
   appetites = segVec;
 }
@@ -506,7 +511,6 @@ void Bug::update(json &bugStep) {
     spice = spice + 1;
   }
   sugar = sugar + foundSugar - sugar*metabolism;
-  cout << "bug sugar is " << sugar << " spice is " << spice << endl;
   traded = false;
 }
 
@@ -515,6 +519,9 @@ int main(int argc, char **argv) {
   // Seed PRNG
   srand(time(NULL));
   World world(50, 50, 100);
+  //for json output
+  int res_x = 6;
+  int res_y = 8;  
   vector<json> bugSteps;
   //outputs 2x2 file
   vector<json> bugAppetites;
@@ -522,17 +529,17 @@ int main(int argc, char **argv) {
   //initialise output file for JSON
   ofstream bugStepsJson;
   ofstream bugAppetitesJson;
-  ofstream bugAppetites6;
   bugStepsJson.open("bugs.json");
-  bugAppetitesJson.open("bugApp-2.json");
+  bugAppetitesJson.open("bugApp-6-8.json");
 
-  while (world.clk<1000) {
+  while (world.clk<100) {
   json bugs, appetites;
   world.update(bugs);
   bugSteps.push_back(bugs);
   // printf("\e[2J");
-  world.print(0);
-  world.calculateAppetites(2, appetites);
+  //0 for sugar, 1 for spice
+  //world.print(0);
+  world.calculateAppetites(res_x, res_y, appetites);
   bugAppetites.push_back(appetites);
   //usleep(90 * 1000);
 
