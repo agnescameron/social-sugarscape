@@ -23,6 +23,7 @@ int random(int min, int max) {
 }
 
 float currentSent;
+int databaseSize;
 
 class World;
 
@@ -121,16 +122,51 @@ class World {
 };
 
 
+int callback_entries(void *data, int argc, char **argv, char **azColName){
+  databaseSize = atoi(argv[0]);
+  return 0;
+}
+
 int callback(void *data, int argc, char **argv, char **azColName){
-   //int i;
-   // fprintf(stderr, "%s: ", (const char*)data);
+   int i;
+   fprintf(stderr, "%s: ", (const char*)data);
    
-   // for(i = 0; i<argc; i++){
-   //    printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-   // }
-   
-   currentSent = atof(argv[0]);
+   for(i = 0; i<argc; i++){
+      printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+   }
+  //change shit here!
+
+   // cout << "sent is " << argv[3] << endl;
+   currentSent = 0.3;
+   //atof(argv[0]);
    //printf("\n");
+   return 0;
+}
+
+int getNumEntries() {
+   sqlite3 *db;
+   char *zErrMsg = 0;
+   int rc;
+   char sql[256];
+   const char* data = "Callback function called";
+
+   rc = sqlite3_open("feelings.db", &db);
+
+   if( rc ) {
+      fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+      return(0);
+   }
+
+   sprintf(sql, "SELECT MAX(id) FROM feelings");
+
+   rc = sqlite3_exec(db, sql, callback_entries, (void*)data, &zErrMsg);
+   
+   if( rc != SQLITE_OK ) {
+      fprintf(stderr, "SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+   }
+
+   sqlite3_close(db);
    return 0;
 }
 
@@ -141,9 +177,7 @@ int getSentiment(int row) {
    char sql[256];
    const char* data = "Callback function called";
 
-   int sentScore = 5;
-
-   rc = sqlite3_open("ishaan/feels.sqlite", &db);
+   rc = sqlite3_open("feelings.db", &db);
 
    if( rc ) {
       fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
@@ -151,7 +185,7 @@ int getSentiment(int row) {
    }
 
 /* Create SQL statement */
-   sprintf(sql, "SELECT sentiment from tweets LIMIT 1 OFFSET %d", row);
+   sprintf(sql, "SELECT Anger, Disgust, Joy, Sadness, Emotion from feelings LIMIT 1 OFFSET %d", row);
 
    /* Execute SQL statement */
    rc = sqlite3_exec(db, sql, callback, (void*)data, &zErrMsg);
@@ -162,7 +196,7 @@ int getSentiment(int row) {
    }
 
    sqlite3_close(db);
-   return sentScore;
+   return 0;
 }
 
 int World::eat(int x, int y) {
@@ -238,7 +272,7 @@ float World::metabolicRatio(int x, int y) {
 
 void World::regrowSugar(){
   //regenerate sugar randomly for each cell
-  getSentiment(clk);
+  getSentiment(clk%databaseSize);
   int regrowth;
   if(currentSent>0){
   regrowth = ceil((float)9*currentSent);
@@ -519,6 +553,7 @@ int main(int argc, char **argv) {
   // Seed PRNG
   srand(time(NULL));
   World world(50, 50, 100);
+  getNumEntries();
   //for json output
   int res_x = 6;
   int res_y = 8;  
