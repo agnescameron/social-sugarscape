@@ -125,6 +125,7 @@ class World {
     void print(int selection);
     void printAppetites();
     void calculateAppetites(int res_x, int res_y, json &appetites);
+    void reincarnate(int id);
 };
 
 
@@ -138,7 +139,7 @@ int callback(void *data, int argc, char **argv, char **azColName){
    fprintf(stderr, "%s: ", (const char*)data);
    
    for(i = 0; i<argc; i++){
-      printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+      // printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
    }
   //change shit here!
 
@@ -395,12 +396,44 @@ void World::calculateAppetites(int res_x, int res_y, json &appetites) {
   appetites = segVec;
 }
 
+void World::reincarnate(int id) {
+
+  // delete bug from list
+  auto remove = remove_if(bugs.begin(), bugs.end(), [&](const Bug *b) {
+    return (b->id == id);
+  });
+
+  bugs.erase(remove, bugs.end());
+
+  printf("bugs length is now %d", bugs.size());
+
+  //   auto remove = remove_if(sight.begin(), sight.end(), [](const Glance *a) {
+  //   return a->occupied;
+  // }); 
+
+  // generate a new bug in a random unoccupied square with same id
+  // int x, y;
+  // float sugar = 0;
+  // float spice = 0;
+  // bool traded = false;
+  // float metabolism = 0.5;
+  // int timeToLive = random(MIN_AGE, MAX_AGE);
+
+  // do {
+  //   x = random(0, width);
+  //   y = random(0, height);
+  // } while (occupied(x, y));
+
+  // bugs.push_back(new Bug(this, id, x, y, sugar, spice, traded, metabolism, timeToLive));
+
+}
+
 //death function
 void Bug::updateLifecycle() {
   // printf("not dead yet");
   timeToLive = timeToLive-1;
   if(timeToLive == 0){
-    printf("i died!!");
+    world->reincarnate(id);
   }
 }
 
