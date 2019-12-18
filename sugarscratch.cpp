@@ -43,12 +43,13 @@ class Bug {
     int nextX, nextY;
     float sugar;
     float spice;
+    int timeToLive;
     bool traded;
     float metabolism;
 
     Glance *look(int dx, int dy);
   public:
-    Bug(World *_world, int _id, int _x, int _y, float _sugar, float _spice, bool _traded, float _metabolism) {
+    Bug(World *_world, int _id, int _x, int _y, float _sugar, float _spice, bool _traded, float _metabolism, int _timeToLive) {
       world = _world;
       id = _id;
       x = _x;
@@ -57,8 +58,10 @@ class Bug {
       spice = _spice;
       traded = _traded;
       metabolism = _metabolism;
+      timeToLive = _timeToLive;
     };
     void update(json &bugStep);
+    void updateLifecycle();
     float calculateRatio();
     void think();
     void trade();    
@@ -69,7 +72,9 @@ class World {
     const float MIN_SUGAR = 1.0;
     const float MAX_SUGAR = 6.0;
     const float MIN_SPICE = 0.0;
-    const float MAX_SPICE = 3.0;    
+    const float MAX_SPICE = 3.0;
+    const int MIN_AGE = 20;
+    const int MAX_AGE = 50; 
     const int width, height;
     vector <vector<int> > cells;
   public:
@@ -97,13 +102,14 @@ class World {
         float spice = 0;
         bool traded = false;
         float metabolism = 0.5;
+        int timeToLive = random(MIN_AGE, MAX_AGE);
 
         do {
           x = random(0, width);
           y = random(0, height);
         } while (occupied(x, y));
 
-        bugs.push_back(new Bug(this, id, x, y, sugar, spice, traded, metabolism));
+        bugs.push_back(new Bug(this, id, x, y, sugar, spice, traded, metabolism, timeToLive));
       }
     }
 
@@ -137,7 +143,7 @@ int callback(void *data, int argc, char **argv, char **azColName){
   //change shit here!
 
    // cout << "sent is " << argv[3] << endl;
-   currentSent = 0.3;
+   currentSent = atof(argv[0]);
    //atof(argv[0]);
    //printf("\n");
    return 0;
@@ -311,24 +317,31 @@ float World::getSpice(int x, int y) {
 
 void World::update(json &bugStep) {
 
+  //sort the world out so the friends can snack
   regrowSugar();
 
   // Update the bugs in a random order
   vector<Bug*> shuffledBugs = vector<Bug*>(bugs);
   random_shuffle(shuffledBugs.begin(), shuffledBugs.end());
 
-  // Let everyone figure out there next move without the world changing
+  // Let everyone figure out their next move without the world changing
   for (auto bug : shuffledBugs) {
     bug->think();
   }
 
-  // // Let everyone figure out their next move without the world changing
+  // Let the bugs trade with one another
   for (auto bug : shuffledBugs) {
     bug->trade();
   }
+
   // Let everyone affect the world
   for (auto bug : shuffledBugs) {
     bug->update(bugStep);
+  }
+
+  // Let the world affect everyone (death)
+  for (auto bug : shuffledBugs) {
+    bug->updateLifecycle();
   }
 }
 
@@ -354,6 +367,7 @@ void World::print(int s) {
 
 //takes segments of the grid and calculates the 'appetites'
 //of the bugs in that space
+//NOT CURRENTLY IN USE FOR DEATH EDITION
 void World::calculateAppetites(int res_x, int res_y, json &appetites) {
   int seg_x = floor(width/res_x);
   int seg_y = floor(height/res_y);
@@ -381,6 +395,10 @@ void World::calculateAppetites(int res_x, int res_y, json &appetites) {
   appetites = segVec;
 }
 
+//death function
+void Bug::updateLifecycle() {
+  // printf("not dead yet");
+}
 
 
 Glance *Bug::look(int dx, int dy) {
@@ -567,16 +585,16 @@ int main(int argc, char **argv) {
   bugStepsJson.open("bugs.json");
   bugAppetitesJson.open("bugApp-6-8.json");
 
-  while (world.clk<100) {
+  while (world.clk<1000) {
   json bugs, appetites;
   world.update(bugs);
   bugSteps.push_back(bugs);
   // printf("\e[2J");
   //0 for sugar, 1 for spice
-  //world.print(0);
+  // world.print(0);
   world.calculateAppetites(res_x, res_y, appetites);
   bugAppetites.push_back(appetites);
-  //usleep(90 * 1000);
+  // usleep(90 * 1000);
 
   //increment the timer
   world.clk++;
