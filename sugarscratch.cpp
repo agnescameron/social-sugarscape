@@ -398,6 +398,10 @@ void World::calculateAppetites(int res_x, int res_y, json &appetites) {
 //death function
 void Bug::updateLifecycle() {
   // printf("not dead yet");
+  timeToLive = timeToLive-1;
+  if(timeToLive == 0){
+    printf("i died!!");
+  }
 }
 
 
