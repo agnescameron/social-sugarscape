@@ -49,7 +49,8 @@ class Bug {
 
     Glance *look(int dx, int dy);
   public:
-    Bug(World *_world, int _id, int _x, int _y, float _sugar, float _spice, bool _traded, float _metabolism, int _timeToLive) {
+    Bug(World *_world, int _id, int _x, int _y, float _sugar, float _spice, 
+      bool _traded, float _metabolism, int _timeToLive) {
       world = _world;
       id = _id;
       x = _x;
@@ -73,8 +74,8 @@ class World {
     const float MAX_SUGAR = 6.0;
     const float MIN_SPICE = 0.0;
     const float MAX_SPICE = 3.0;
-    const int MIN_AGE = 20;
-    const int MAX_AGE = 50; 
+    const int MIN_AGE = 40;
+    const int MAX_AGE = 150; 
     const int width, height;
     vector <vector<int> > cells;
   public:
@@ -126,6 +127,7 @@ class World {
     void printAppetites();
     void calculateAppetites(int res_x, int res_y, json &appetites);
     void reincarnate(int id);
+    void trackBugs(int numTracked, json &trackedBugs);
 };
 
 
@@ -368,7 +370,6 @@ void World::print(int s) {
 
 //takes segments of the grid and calculates the 'appetites'
 //of the bugs in that space
-//NOT CURRENTLY IN USE FOR DEATH EDITION
 void World::calculateAppetites(int res_x, int res_y, json &appetites) {
   int seg_x = floor(width/res_x);
   int seg_y = floor(height/res_y);
@@ -396,16 +397,30 @@ void World::calculateAppetites(int res_x, int res_y, json &appetites) {
   appetites = segVec;
 }
 
+void World::trackBugs(int numTracked, json &trackedBugs){
+  valarray <float> sugar(numTracked);
+
+  //iterate over the bugs vector
+  //for the bug with id X, write that id into
+  //tracked bugs in the right place
+  
+  for(int i = 0; i<numTracked; i++){
+    for (auto bug : bugs) {
+      if (bug->id == i) {
+        sugar[i] = bug->sugar;
+      }
+    }
+  }
+
+}
+
 void World::reincarnate(int id) {
-
   // delete bug from list
-  auto remove = remove_if(bugs.begin(), bugs.end(), [&](const Bug *b) {
-    return (b->id == id);
+  auto remove = remove_if(bugs.begin(), bugs.end(), [&](const Bug *bug) {
+    return (bug->id == id);
   });
-
+  
   bugs.erase(remove, bugs.end());
-
-  printf("bugs length is now %d", bugs.size());
 
   // generate a new bug in a random unoccupied square with same id
   int x, y;
@@ -428,7 +443,7 @@ void World::reincarnate(int id) {
 void Bug::updateLifecycle() {
   // printf("not dead yet");
   timeToLive = timeToLive-1;
-  if(timeToLive == 0){
+  if(timeToLive == 0 || sugar == 0.0){
     world->reincarnate(id);
   }
 }
@@ -608,33 +623,35 @@ int main(int argc, char **argv) {
   //for json output
   int res_x = 6;
   int res_y = 8;  
-  vector<json> bugSteps;
+  vector<json> bugTracker;
   //outputs 2x2 file
   vector<json> bugAppetites;
+  vector<json> trackedBugs;
 
   //initialise output file for JSON
-  ofstream bugStepsJson;
+  ofstream bugTrackerJson;
   ofstream bugAppetitesJson;
-  bugStepsJson.open("bugs.json");
+  bugTrackerJson.open("bugTracker.json");
   bugAppetitesJson.open("bugApp-6-8.json");
 
-  while (world.clk<1000) {
-  json bugs, appetites;
+  while (world.clk<100) {
+  json bugs, appetites, trackedBugs;
   world.update(bugs);
-  bugSteps.push_back(bugs);
   // printf("\e[2J");
   //0 for sugar, 1 for spice
-  // world.print(0);
-  world.calculateAppetites(res_x, res_y, appetites);
+  world.print(0);
+  // world.calculateAppetites(res_x, res_y, appetites);
+  world.trackBugs(res_x*res_y, trackedBugs);
+  bugTracker.push_back(trackedBugs);
   bugAppetites.push_back(appetites);
-  // usleep(90 * 1000);
+  usleep(90 * 1000);
 
   //increment the timer
   world.clk++;
   // cout << world.clk << endl;
   }
 
-  bugStepsJson << bugSteps << endl;
+  bugTrackerJson << bugTracker << endl;
   bugAppetitesJson << bugAppetites << endl;
 
 }
