@@ -412,6 +412,7 @@ void World::trackBugs(int numTracked, json &trackedBugs){
     }
   }
 
+  trackedBugs = sugar;
 }
 
 void World::reincarnate(int id) {
@@ -626,7 +627,6 @@ int main(int argc, char **argv) {
   vector<json> bugTracker;
   //outputs 2x2 file
   vector<json> bugAppetites;
-  vector<json> trackedBugs;
 
   //initialise output file for JSON
   ofstream bugTrackerJson;
@@ -640,7 +640,7 @@ int main(int argc, char **argv) {
   // printf("\e[2J");
   //0 for sugar, 1 for spice
   world.print(0);
-  // world.calculateAppetites(res_x, res_y, appetites);
+  world.calculateAppetites(res_x, res_y, appetites);
   world.trackBugs(res_x*res_y, trackedBugs);
   bugTracker.push_back(trackedBugs);
   bugAppetites.push_back(appetites);
