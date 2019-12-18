@@ -407,24 +407,20 @@ void World::reincarnate(int id) {
 
   printf("bugs length is now %d", bugs.size());
 
-  //   auto remove = remove_if(sight.begin(), sight.end(), [](const Glance *a) {
-  //   return a->occupied;
-  // }); 
-
   // generate a new bug in a random unoccupied square with same id
-  // int x, y;
-  // float sugar = 0;
-  // float spice = 0;
-  // bool traded = false;
-  // float metabolism = 0.5;
-  // int timeToLive = random(MIN_AGE, MAX_AGE);
+  int x, y;
+  float sugar = 0;
+  float spice = 0;
+  bool traded = false;
+  float metabolism = 0.5;
+  int timeToLive = random(MIN_AGE, MAX_AGE);
 
-  // do {
-  //   x = random(0, width);
-  //   y = random(0, height);
-  // } while (occupied(x, y));
+  do {
+    x = random(0, width);
+    y = random(0, height);
+  } while (occupied(x, y));
 
-  // bugs.push_back(new Bug(this, id, x, y, sugar, spice, traded, metabolism, timeToLive));
+  bugs.push_back(new Bug(this, id, x, y, sugar, spice, traded, metabolism, timeToLive));
 
 }
 
