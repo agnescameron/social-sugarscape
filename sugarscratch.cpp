@@ -386,14 +386,8 @@ void World::calculateAppetites(int res_x, int res_y, json &appetites) {
   }
 
   //now, normalise for 0-255
-  // int maxSeg = segVec.max();
-  // int minSeg = segVec.min(); 
   segVec = segVec-segVec.min();
   segVec = segVec*(255/segVec.max());
-  float avSeg = segVec.sum()/segVec.size();
-  int range = segVec.max() - segVec.min(); 
-  cout << range << "  " << avSeg << endl;
-
   appetites = segVec;
 }
 
@@ -411,11 +405,14 @@ void World::trackBugs(int numTracked, json &trackedBugs){
       }
     }
   }
-
+  //normalising
   sugar = sugar - sugar.min();
   sugar = sugar*(255/sugar.max());
-  sugar = sugar.apply([](float i) -> float { return floor(i); });
-  trackedBugs = sugar;
+  // sugar = sugar.apply([](float i) -> float { return floor(i); });
+
+  for(int i = 0; i<numTracked; i++){
+    trackedBugs[i] = int(floor(sugar[i]));
+  }
 }
 
 void World::reincarnate(int id) {
@@ -629,13 +626,13 @@ int main(int argc, char **argv) {
   int res_y = 8;  
   vector<json> bugTracker;
   //outputs 2x2 file
-  vector<json> bugAppetites;
+  // vector<json> bugAppetites;
 
   //initialise output file for JSON
   ofstream bugTrackerJson;
-  ofstream bugAppetitesJson;
+  // ofstream bugAppetitesJson;
   bugTrackerJson.open("bugTracker.json");
-  bugAppetitesJson.open("bugApp-6-8.json");
+  // bugAppetitesJson.open("bugAppetites.json");
 
   while (world.clk<100) {
   json bugs, appetites, trackedBugs;
@@ -643,10 +640,10 @@ int main(int argc, char **argv) {
   // printf("\e[2J");
   //0 for sugar, 1 for spice
   world.print(0);
-  world.calculateAppetites(res_x, res_y, appetites);
+  // world.calculateAppetites(res_x, res_y, appetites);
   world.trackBugs(res_x*res_y, trackedBugs);
   bugTracker.push_back(trackedBugs);
-  bugAppetites.push_back(appetites);
+  // bugAppetites.push_back(appetites);
   usleep(90 * 1000);
 
   //increment the timer
@@ -655,6 +652,6 @@ int main(int argc, char **argv) {
   }
 
   bugTrackerJson << bugTracker << endl;
-  bugAppetitesJson << bugAppetites << endl;
+  // bugAppetitesJson << bugAppetites << endl;
 
 }
