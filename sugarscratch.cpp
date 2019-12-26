@@ -412,6 +412,9 @@ void World::trackBugs(int numTracked, json &trackedBugs){
     }
   }
 
+  sugar = sugar - sugar.min();
+  sugar = sugar*(255/sugar.max());
+  sugar = sugar.apply([](float i) -> float { return floor(i); });
   trackedBugs = sugar;
 }
 
