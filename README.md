@@ -1,5 +1,8 @@
 # sugarscratch2
 
+dependencies:
+you'll need to install [this library](https://github.com/nlohmann/json) (nlohmann:json).
+
 to run the code:
 
 `$ make`  
