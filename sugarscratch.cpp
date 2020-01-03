@@ -23,6 +23,7 @@ int random(int min, int max) {
 }
 
 float currentSent;
+int currentMaxAge = 150;
 int databaseSize;
 
 class World;
@@ -147,6 +148,7 @@ int callback(void *data, int argc, char **argv, char **azColName){
 
    // cout << "sent is " << argv[3] << endl;
    currentSent = atof(argv[0]);
+   currentMaxAge = 150 - (int)floor((150/2)*atof(argv[3]));
    //atof(argv[0]);
    //printf("\n");
    return 0;
@@ -157,7 +159,7 @@ int getNumEntries() {
    char *zErrMsg = 0;
    int rc;
    char sql[256];
-   const char* data = "Callback function called";
+   const char* data = "Callback function called\n";
 
    rc = sqlite3_open("feelings.db", &db);
 
@@ -184,7 +186,7 @@ int getSentiment(int row) {
    char *zErrMsg = 0;
    int rc;
    char sql[256];
-   const char* data = "Callback function called";
+   const char* data = "Callback function called\n";
 
    rc = sqlite3_open("feelings.db", &db);
 
@@ -387,7 +389,7 @@ void World::calculateAppetites(int res_x, int res_y, json &appetites) {
 
   //now, normalise for 0-255
   segVec = segVec-segVec.min();
-  segVec = segVec*(255/segVec.max());
+  segVec = segVec*(4095/segVec.max());
   appetites = segVec;
 }
 
@@ -407,8 +409,10 @@ void World::trackBugs(int numTracked, json &trackedBugs){
   }
   //normalising
   sugar = sugar - sugar.min();
-  sugar = sugar*(255/sugar.max());
-  // sugar = sugar.apply([](float i) -> float { return floor(i); });
+  sugar = sugar*(4095/sugar.max());
+
+  //thresholding -- give the peltiers a break
+  sugar = sugar.apply([](float i) -> float { if(i<2500.0) return 0.0; else return i; });
 
   for(int i = 0; i<numTracked; i++){
     trackedBugs[i] = int(floor(sugar[i]));
@@ -429,7 +433,7 @@ void World::reincarnate(int id) {
   float spice = 0;
   bool traded = false;
   float metabolism = 0.5;
-  int timeToLive = random(MIN_AGE, MAX_AGE);
+  int timeToLive = random(MIN_AGE, currentMaxAge);
 
   do {
     x = random(0, width);
@@ -634,17 +638,17 @@ int main(int argc, char **argv) {
   bugTrackerJson.open("bugTracker.json");
   // bugAppetitesJson.open("bugAppetites.json");
 
-  while (world.clk<100) {
+  while (world.clk<1000) {
   json bugs, appetites, trackedBugs;
   world.update(bugs);
   // printf("\e[2J");
   //0 for sugar, 1 for spice
-  world.print(0);
+  // world.print(0);
   // world.calculateAppetites(res_x, res_y, appetites);
   world.trackBugs(res_x*res_y, trackedBugs);
   bugTracker.push_back(trackedBugs);
   // bugAppetites.push_back(appetites);
-  usleep(90 * 1000);
+  // usleep(90 * 1000);
 
   //increment the timer
   world.clk++;
