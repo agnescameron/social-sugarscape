@@ -389,7 +389,7 @@ void World::calculateAppetites(int res_x, int res_y, json &appetites) {
 
   //now, normalise for 0-255
   segVec = segVec-segVec.min();
-  segVec = segVec*(4095/segVec.max());
+  segVec = segVec*(3071/segVec.max());
   appetites = segVec;
 }
 
@@ -409,10 +409,10 @@ void World::trackBugs(int numTracked, json &trackedBugs){
   }
   //normalising
   sugar = sugar - sugar.min();
-  sugar = sugar*(4095/sugar.max());
+  sugar = sugar*(3071/sugar.max());
 
   //thresholding -- give the peltiers a break
-  sugar = sugar.apply([](float i) -> float { if(i<2500.0) return 0.0; else return i; });
+  sugar = sugar.apply([](float i) -> float { if(i<1900.0) return 0.0; else return i; });
 
   for(int i = 0; i<numTracked; i++){
     trackedBugs[i] = int(floor(sugar[i]));
