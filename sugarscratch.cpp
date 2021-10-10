@@ -159,7 +159,7 @@ int getNumEntries() {
    char *zErrMsg = 0;
    int rc;
    char sql[256];
-   const char* data = "Callback function called\n";
+   const char* data = "";
 
    rc = sqlite3_open("feelings.db", &db);
 
@@ -626,7 +626,7 @@ int main(int argc, char **argv) {
     World world(50, 50, 100);
     getNumEntries();
     //for json output
-    int simLength = 1000;
+    int simLength = 9000;
     int res_x = 6;
     int res_y = 8;  
     vector<json> bugTracker;
@@ -653,7 +653,10 @@ int main(int argc, char **argv) {
 
     //increment the timer
     world.clk++;
-    cout << world.clk << endl;
+
+    if(world.clk%100 == 0) {
+      cout << world.clk << endl;
+    }
   }
 
   bugTrackerJson << bugTracker << endl;

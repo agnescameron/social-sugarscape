@@ -30,14 +30,9 @@ def clean_tweets(tweets):
 
 
 def get_scores(df):
-	scores = []# Declare variables for scores
-	compound_list = []
-	positive_list = []
-	negative_list = []
-	neutral_list = []
 
-	for index, tweet in enumerate(df['text']):
-		print(index)
+	for index, tweet in enumerate(df['tweet']):
+		if index%50 == 0: print(index)
 		compound = analyser.polarity_scores(tweet)["compound"]
 		pos = analyser.polarity_scores(tweet)["pos"]
 		neu = analyser.polarity_scores(tweet)["neu"]
@@ -48,15 +43,7 @@ def get_scores(df):
 		conn.execute("INSERT INTO FEELINGS (COMPOUND,COMPNORM,POSITIVE,NEGATIVE,NEUTRAL) \
 			VALUES (?,?,?,?,?)", (compound, comp_norm, pos, neg, neu))
 
-		scores.append({
-			"Compound": compound,
-			"Comp_norm": comp_norm,
-			"Positive": pos,
-			"Negative": neg,
-			"Neutral": neu
-		})
-
-	return scores
+	return
 
 if __name__ == "__main__":
 
@@ -80,28 +67,12 @@ if __name__ == "__main__":
 	#initialise analyser
 	analyser = SentimentIntensityAnalyzer()
 
-	auth = tweepy.AppAuthHandler(os.environ['consumer_key'], os.environ['consumer_secret'])
-	api = tweepy.API(auth)
-	client = tweepy.Client(os.environ['bearer_token'])
 
-	keywords = ["protest"]
-	sentiments = []
-
-	for search in keywords:
-		try:
-			for tweet in tweepy.Cursor(api.search_tweets, q=search).items(500):
-				sentiments.append({
-					"search": search,
-					"text": tweet.text
-				})
-		except tweepy.errors.TweepyException as e:
-			print(e)
-
-	df = pd.DataFrame.from_dict(sentiments)
-	df['text'] = clean_tweets(df['text'])
+	df = pd.read_csv('datasets/protest.csv', sep='\t')
+	df['tweet'] = clean_tweets(df['tweet'])
 	df = df.drop_duplicates()
 
-	scores = get_scores(df)
-	print(scores)
+	get_scores(df)
+	# print(scores)
 	conn.commit()
 	conn.close()

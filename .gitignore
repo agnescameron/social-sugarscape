@@ -5,3 +5,4 @@ datasets/
 .DS_Store
 *.json
 .env
+*.bak
