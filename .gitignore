@@ -1,6 +1,7 @@
 bin/
 ishaan/
 scrapers/
+datasets/
 .DS_Store
 *.json
-
+.env

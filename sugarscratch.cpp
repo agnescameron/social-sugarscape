@@ -168,7 +168,7 @@ int getNumEntries() {
       return(0);
    }
 
-   sprintf(sql, "SELECT MAX(id) FROM feelings");
+   sprintf(sql, "SELECT MAX(ID) FROM FEELINGS");
 
    rc = sqlite3_exec(db, sql, callback_entries, (void*)data, &zErrMsg);
    
@@ -196,7 +196,7 @@ int getSentiment(int row) {
    }
 
 /* Create SQL statement */
-   sprintf(sql, "SELECT Anger, Disgust, Joy, Sadness, Emotion from feelings LIMIT 1 OFFSET %d", row);
+   sprintf(sql, "SELECT COMPOUND, COMPNORM, POSITIVE, NEGATIVE, NEUTRAL from FEELINGS LIMIT 1 OFFSET %d", row);
 
    /* Execute SQL statement */
    rc = sqlite3_exec(db, sql, callback, (void*)data, &zErrMsg);
@@ -387,9 +387,9 @@ void World::calculateAppetites(int res_x, int res_y, json &appetites) {
     segVec[i] = segSum;
   }
 
-  //now, normalise for 0-255
+  //now, normalise for 0-3000
   segVec = segVec-segVec.min();
-  segVec = segVec*(3071/segVec.max());
+  segVec = segVec*(3000/segVec.max());
   appetites = segVec;
 }
 
@@ -409,10 +409,10 @@ void World::trackBugs(int numTracked, json &trackedBugs){
   }
   //normalising
   sugar = sugar - sugar.min();
-  sugar = sugar*(3071/sugar.max());
+  sugar = sugar*(3000/sugar.max());
 
   //thresholding -- give the peltiers a break
-  sugar = sugar.apply([](float i) -> float { if(i<1900.0) return 0.0; else return i; });
+  sugar = sugar.apply([](float i) -> float { if(i<1500.0) return 0.0; else return i; });
 
   for(int i = 0; i<numTracked; i++){
     trackedBugs[i] = int(floor(sugar[i]));
@@ -621,38 +621,39 @@ void Bug::update(json &bugStep) {
 
 
 int main(int argc, char **argv) {
-  // Seed PRNG
-  srand(time(NULL));
-  World world(50, 50, 100);
-  getNumEntries();
-  //for json output
-  int res_x = 6;
-  int res_y = 8;  
-  vector<json> bugTracker;
-  //outputs 2x2 file
-  // vector<json> bugAppetites;
+    // Seed PRNG
+    srand(time(NULL));
+    World world(50, 50, 100);
+    getNumEntries();
+    //for json output
+    int simLength = 1000;
+    int res_x = 6;
+    int res_y = 8;  
+    vector<json> bugTracker;
+    //outputs 2x2 file
+    // vector<json> bugAppetites;
 
-  //initialise output file for JSON
-  ofstream bugTrackerJson;
-  // ofstream bugAppetitesJson;
-  bugTrackerJson.open("bugTracker.json");
-  // bugAppetitesJson.open("bugAppetites.json");
+    //initialise output file for JSON
+    ofstream bugTrackerJson;
+    // ofstream bugAppetitesJson;
+    bugTrackerJson.open("bugTracker.json");
+    // bugAppetitesJson.open("bugAppetites.json");
 
-  while (world.clk<1000) {
-  json bugs, appetites, trackedBugs;
-  world.update(bugs);
-  // printf("\e[2J");
-  //0 for sugar, 1 for spice
-  // world.print(0);
-  // world.calculateAppetites(res_x, res_y, appetites);
-  world.trackBugs(res_x*res_y, trackedBugs);
-  bugTracker.push_back(trackedBugs);
-  // bugAppetites.push_back(appetites);
-  // usleep(90 * 1000);
+    while (world.clk<simLength) {
+    json bugs, appetites, trackedBugs;
+    world.update(bugs);
+    // printf("\e[2J");
+    //0 for sugar, 1 for spice
+    // world.print(0);
+    // world.calculateAppetites(res_x, res_y, appetites);
+    world.trackBugs(res_x*res_y, trackedBugs);
+    bugTracker.push_back(trackedBugs);
+    // bugAppetites.push_back(appetites);
+    // usleep(90 * 1000);
 
-  //increment the timer
-  world.clk++;
-  // cout << world.clk << endl;
+    //increment the timer
+    world.clk++;
+    cout << world.clk << endl;
   }
 
   bugTrackerJson << bugTracker << endl;
